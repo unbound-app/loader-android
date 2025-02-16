@@ -1,0 +1,58 @@
+name: Build Unbound Module APK
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Prepare Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execution permission
+        run: chmod +x ./gradlew
+
+      - name: Build APKs
+        run: ./gradlew build
+
+      - name: Setup directories
+        run: |
+          mkdir -p /tmp/unbound/apks
+          mkdir -p /tmp/unbound/tools
+
+      - name: Move debug APK
+        run: mv ./app/build/outputs/apk/debug/app-debug.apk /tmp/unbound/apks
+
+      - name: Download uber-apk-signer
+        run: gh release download --output /tmp/unbound/tools/uber-apk-signer.jar --repo patrickfav/uber-apk-signer --pattern uber-apk-signer-*.jar
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Sign release APK
+        run: java -jar /tmp/unbound/tools/uber-apk-signer.jar --apks ./app/build/outputs/apk/release/app-release-unsigned.apk --out /tmp/unbound/apks/
+
+      - name: Rename release APK
+        run: mv /tmp/unbound/apks/app-release-aligned-debugSigned.apk /tmp/unbound/apks/app-release.apk
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: /tmp/unbound/apks/app-debug.apk
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: /tmp/unbound/apks/app-release.apk
