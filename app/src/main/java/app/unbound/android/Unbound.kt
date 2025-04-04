@@ -44,7 +44,7 @@ class Unbound: IXposedHookZygoteInit, IXposedHookLoadPackage, IXposedHookInitPac
     }
 
     override fun handleLoadPackage(param: XC_LoadPackage.LoadPackageParam) = with(param) {
-        if (packageName == "com.google.android.webview") return
+        if (packageName == "com.android.webview" || packageName == "com.google.android.webview") return
 
         info = param
         initialize(param)
@@ -179,7 +179,7 @@ class Unbound: IXposedHookZygoteInit, IXposedHookLoadPackage, IXposedHookInitPac
     }
 
     override fun handleInitPackageResources(param: XC_InitPackageResources.InitPackageResourcesParam) = with (param) {
-        if (packageName == "com.google.android.webview") return
+        if (packageName == "com.android.webview" || packageName == "com.google.android.webview") return
 
         val isEnabled = settings.get("unbound", "loader.enabled", true) as Boolean
         val isInRecovery = settings.get("unbound", "recovery", false) as Boolean
